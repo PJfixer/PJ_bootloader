@@ -227,17 +227,14 @@ void USART3_IRQHandler(void)
   /* USER CODE BEGIN USART3_IRQn 1 */
 	uint8_t temp ;
 	HAL_UART_Receive(&huart3,&temp,1,50);
-	if(temp == '!')
-	{
-		messageHandler()
-	}
-	else
-	{
+	UART3_IT_buffer[UART3_byte_counter] = temp;
+	UART3_byte_counter++;
 
-		UART3_IT_buffer[UART3_byte_counter] = temp;
-		UART3_byte_counter++;
+	if(temp == '!') // if char is ! then command is complete
+	{
+		messageHandler(UART3_IT_buffer);
+		UART3_byte_counter = 0;
 	}
-
 
 	 if(UART3_byte_counter > UART3_RX_BUFFER_SIZE)
 	 {

@@ -96,7 +96,9 @@ int main(void)
   MX_TIM1_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  serial_send((uint8_t*)&"PJ bootloader start\n", strlen("PJ bootloader start\n"));
   bootloaderInit();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

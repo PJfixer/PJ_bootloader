@@ -71,6 +71,7 @@ void jumpToApp();
 void deinitEverything();
 uint8_t string_compare(char array1[], char array2[], uint16_t length);
 void errorBlink();
+void serial_send(uint8_t * Buf, uint16_t length);
 void messageHandler(uint8_t* Buf);
 
 

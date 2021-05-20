@@ -10,6 +10,8 @@
 
 #include "bootloader.h"
 
+extern UART_HandleTypeDef huart3;
+
 void bootloaderInit()
 {
 	Flashed_offset = 0; // we flash nothing yet set to 0
@@ -18,6 +20,7 @@ void bootloaderInit()
 
 	if(readWord(BOOTLOADER_MODE_SET_ADDRESS) == 0xC0FFEE00)
 	{
+		__HAL_UART_ENABLE_IT(&huart3,UART_IT_RXNE);//enable uart  RX interupt here
 		bootloaderMode = FlashMode;
 	}
 	else
@@ -67,16 +70,20 @@ void flashWord(uint32_t dataToFlash)
 	  }while(status != HAL_OK && flash_attempt < 10 && dataToFlash == readWord(address));
 	  if(status != HAL_OK)
 	  {
-		  CDC_Transmit_FS((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n"));
+		  //CDC_Transmit_FS((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n"));
+		  serial_send((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n"));
 	  }else
 	  {//Word Flash Successful
 		  Flashed_offset += 4;
-		  CDC_Transmit_FS((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n"));
+		  //CDC_Transmit_FS((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n"));
+		  serial_send((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n"));
+
 	  }
 	}else
 	{
-	  CDC_Transmit_FS((uint8_t*)&"Error: Memory not unlocked nor erased!\n",
-			  strlen("Error: Memory not unlocked nor erased!\n"));
+	  //CDC_Transmit_FS((uint8_t*)&"Error: Memory not unlocked nor erased!\n",
+		//	  strlen("Error: Memory not unlocked nor erased!\n"));
+	  serial_send((uint8_t*)&"Error: Memory not unlocked nor erased!\n", strlen("Error: Memory not unlocked nor erased!\n"));
 	}
 }
 
@@ -118,7 +125,7 @@ void eraseMemory()
 		while(HAL_FLASH_OB_Unlock()!=HAL_OK);//Weird fix attempt
 
 	if(status_erase != HAL_OK)
-		errorBlink();
+		//errorBlink();
 	flashStatus = Erased;
 	Flashed_offset = 0;
 }
@@ -148,7 +155,9 @@ void unlockFlashAndEraseMemory()
 		status_erase = HAL_FLASHEx_Erase(&EraseInitStruct, &PageError);
 
 		if(status_erase != HAL_OK)
-			errorBlink();
+		{
+			//errorBlink();
+		}
 	}
 
 	flashStatus = Unlocked;
@@ -198,7 +207,10 @@ uint8_t string_compare(char array1[], char array2[], uint16_t length)
 	 else 	return 0;
 }
 
-
+void serial_send(uint8_t * Buf, uint16_t length)
+{
+	 HAL_UART_Transmit(&huart3,Buf,length,50);
+}
 
 void messageHandler(uint8_t* Buf)
 {
@@ -206,25 +218,34 @@ void messageHandler(uint8_t* Buf)
 			&& flashStatus != Unlocked)
 	{
 		eraseMemory();
-		CDC_Transmit_FS((uint8_t*)&"Flash: Erased!\n", strlen("Flash: Erased!\n"));
-	}else if(string_compare((char*)Buf, FLASHING_START, strlen(FLASHING_START)))
+		//CDC_Transmit_FS((uint8_t*)&"Flash: Erased!\n", strlen("Flash: Erased!\n"));
+		serial_send((uint8_t*)&"Flash: Erased!\n", strlen("Flash: Erased!\n"));
+	}
+	else if(string_compare((char*)Buf, FLASHING_START, strlen(FLASHING_START)))
 	{
 		unlockFlashAndEraseMemory();
-		CDC_Transmit_FS((uint8_t*)&"Flash: Unlocked!\n", strlen("Flash: Unlocked!\n"));
-	}else if(string_compare((char*)Buf, FLASHING_FINISH, strlen(FLASHING_FINISH))
+		//CDC_Transmit_FS((uint8_t*)&"Flash: Unlocked!\n", strlen("Flash: Unlocked!\n"));
+		serial_send((uint8_t*)&"Flash: Unlocked!\n", strlen("Flash: Unlocked!\n"));
+	}
+	else if(string_compare((char*)Buf, FLASHING_FINISH, strlen(FLASHING_FINISH))
 			  && flashStatus == Unlocked)
 	{
 		lockFlash();
-		CDC_Transmit_FS((uint8_t*)&"Flash: Success!\n", strlen("Flash: Success!\n"));
-	}else if(string_compare((char*)Buf, FLASHING_ABORT, strlen(FLASHING_ABORT))
+		//CDC_Transmit_FS((uint8_t*)&"Flash: Success!\n", strlen("Flash: Success!\n"));
+		serial_send((uint8_t*)&"Flash: Success!\n", strlen("Flash: Success!\n"));
+	}
+	else if(string_compare((char*)Buf, FLASHING_ABORT, strlen(FLASHING_ABORT))
 			  && flashStatus == Unlocked)
 	{
 		lockFlash();
 		eraseMemory();
-		CDC_Transmit_FS((uint8_t*)&"Flash: Aborted!\n", strlen("Flash: Aborted!\n"));
-	}else
+		//CDC_Transmit_FS((uint8_t*)&"Flash: Aborted!\n", strlen("Flash: Aborted!\n"));
+		serial_send((uint8_t*)&"Flash: Aborted!\n", strlen("Flash: Aborted!\n"));
+	}
+	else
 	{
-		CDC_Transmit_FS((uint8_t*)&"Error: Incorrect step or unknown command!\n",
-			  strlen("Error: Incorrect step or unknown command!\n"));
+		//CDC_Transmit_FS((uint8_t*)&"Error: Incorrect step or unknown command!\n",
+		//	  strlen("Error: Incorrect step or unknown command!\n"));
+		serial_send((uint8_t*)&"Error: Incorrect step or unknown command!\n", strlen("Error: Incorrect step or unknown command!\n"));
 	}
 }
