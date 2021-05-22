@@ -9,7 +9,7 @@
 #define CORE_INC_BOOTLOADER_H_
 
 #define FLASH_PAGE_SIZE_USER (0x400)	//1kB datasheet
-#define BOOTLOADER_MODE_SET_ADDRESS 0x8007800
+#define BOOTLOADER_MODE_SET_ADDRESS 0x801FFFC
 
 #define APP1_START (0x08005000)			//Origin(datasheet) + Bootloader size (20kB)
 #define FLASH_BANK_SIZE  (0X5800) //22KB
@@ -17,10 +17,10 @@
 
 
 
-#define ERASE_FLASH_MEMORY "#ERASE_MEM!"
-#define FLASHING_START "#FLASH_START!"
-#define FLASHING_FINISH "#FLASH_FINISH!"
-#define FLASHING_ABORT "#FLASH_ABORT!"
+#define ERASE_FLASH_MEMORY "#ERASE_MEM"
+#define FLASHING_START "#FLASH_START"
+#define FLASHING_FINISH "#FLASH_FINISH"
+#define FLASHING_ABORT "#FLASH_ABORT"
 
 #include "main.h"
 #include <string.h>
@@ -73,6 +73,7 @@ uint8_t string_compare(char array1[], char array2[], uint16_t length);
 void errorBlink();
 void serial_send(uint8_t * Buf, uint16_t length);
 void messageHandler(uint8_t* Buf);
+void clear_flashmode_flag(void);
 
 
 #endif /* CORE_INC_BOOTLOADER_H_ */

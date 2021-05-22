@@ -37,7 +37,7 @@ void bootloaderInit()
 			uint8_t emptyCellCount = 0;
 			for(uint8_t i=0; i<10; i++)
 			{
-				if(readWord(APP1_START + (i*4)) == -1)
+				if(readWord(APP1_START + (i*4)) == -1) // -1 stand for 0XFFFFFFFF
 					emptyCellCount++;
 			}
 
@@ -193,6 +193,42 @@ void deinitEverything()
 	//TODO : deinit hardware
 }
 
+void clear_flashmode_flag(void)
+{
+	/* Unock the Flash to enable the flash control register access *************/
+		while(HAL_FLASH_Unlock()!=HAL_OK)
+			while(HAL_FLASH_Lock()!=HAL_OK);//Weird fix attempt
+
+		/* Allow Access to option bytes sector */
+		while(HAL_FLASH_OB_Unlock()!=HAL_OK)
+			while(HAL_FLASH_OB_Lock()!=HAL_OK);//Weird fix attempt
+
+		/* Fill EraseInit structure*/
+		FLASH_EraseInitTypeDef EraseInitStruct;
+		EraseInitStruct.TypeErase = FLASH_TYPEERASE_PAGES;
+
+		EraseInitStruct.PageAddress = BOOTLOADER_MODE_SET_ADDRESS;
+
+		EraseInitStruct.NbPages = 1;
+		uint32_t PageError;
+
+		volatile HAL_StatusTypeDef status_erase;
+		status_erase = HAL_FLASHEx_Erase(&EraseInitStruct, &PageError);
+
+		/* Lock the Flash to enable the flash control register access *************/
+		while(HAL_FLASH_Lock()!=HAL_OK)
+			while(HAL_FLASH_Unlock()!=HAL_OK);//Weird fix attempt
+
+		/* Lock Access to option bytes sector */
+		while(HAL_FLASH_OB_Lock()!=HAL_OK)
+			while(HAL_FLASH_OB_Unlock()!=HAL_OK);//Weird fix attempt
+
+		if(status_erase != HAL_OK)
+		{
+			//errorBlink();
+		}
+}
+
 uint8_t string_compare(char array1[], char array2[], uint16_t length)
 {
 	 uint8_t comVAR=0, i;
@@ -231,8 +267,12 @@ void messageHandler(uint8_t* Buf)
 			  && flashStatus == Unlocked)
 	{
 		lockFlash();
+		//TODO : set BOOTLOADER_MODE_SET_ADDRESS to 0XFFFFFFFF to put bootloader in jumpmode after reset
 		//CDC_Transmit_FS((uint8_t*)&"Flash: Success!\n", strlen("Flash: Success!\n"));
-		serial_send((uint8_t*)&"Flash: Success!\n", strlen("Flash: Success!\n"));
+		serial_send((uint8_t*)&"Flash: Success! Rebooting ! \n", strlen("Flash: Success! Rebooting ! \n"));
+		clear_flashmode_flag();
+		HAL_Delay(100);
+		NVIC_SystemReset();
 	}
 	else if(string_compare((char*)Buf, FLASHING_ABORT, strlen(FLASHING_ABORT))
 			  && flashStatus == Unlocked)

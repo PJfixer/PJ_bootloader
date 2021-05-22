@@ -43,7 +43,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-#define UART3_RX_BUFFER_SIZE 50
+#define UART3_RX_BUFFER_SIZE 20
 uint8_t UART3_IT_buffer[UART3_RX_BUFFER_SIZE];
 uint16_t UART3_byte_counter = 0 ;
 /* USER CODE END PV */
@@ -227,13 +227,30 @@ void USART3_IRQHandler(void)
   /* USER CODE BEGIN USART3_IRQn 1 */
 	uint8_t temp ;
 	HAL_UART_Receive(&huart3,&temp,1,50);
-	UART3_IT_buffer[UART3_byte_counter] = temp;
-	UART3_byte_counter++;
 
-	if(temp == '!') // if char is ! then command is complete
+
+	if(temp == '!') // if char is ! then command or packet  is complete
 	{
-		messageHandler(UART3_IT_buffer);
-		UART3_byte_counter = 0;
+		if(UART3_byte_counter == 4 && flashStatus == Unlocked) // si le buffer contient 4 octet et que la flash est deverouiller
+		{
+			uint32_t dataToFlash = (UART3_IT_buffer[3]<<24) +
+										  (UART3_IT_buffer[2]<<16) +
+										  (UART3_IT_buffer[1]<<8) +
+										  UART3_IT_buffer[0];//32bit Word contains 4 Bytes
+			flashWord(dataToFlash); // on ecrit en flash
+
+			UART3_byte_counter = 0;
+		}
+		else
+		{
+			messageHandler(UART3_IT_buffer);
+			UART3_byte_counter = 0;
+		}
+	}
+	else
+	{
+		UART3_IT_buffer[UART3_byte_counter] = temp;
+		UART3_byte_counter++;
 	}
 
 	 if(UART3_byte_counter > UART3_RX_BUFFER_SIZE)
