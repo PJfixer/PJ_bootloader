@@ -94,7 +94,7 @@ uint32_t readWord(uint32_t address)
 	return read_data;
 }
 
-void eraseMemory()
+void eraseMemory(uint32_t nb_pageToerase)
 {
 	/* Unock the Flash to enable the flash control register access *************/
 	while(HAL_FLASH_Unlock()!=HAL_OK)
@@ -110,7 +110,7 @@ void eraseMemory()
 
 	EraseInitStruct.PageAddress = APP1_START;
 
-	EraseInitStruct.NbPages = FLASH_BANK_SIZE/FLASH_PAGE_SIZE_USER;
+	EraseInitStruct.NbPages = nb_pageToerase;
 	uint32_t PageError;
 
 	volatile HAL_StatusTypeDef status_erase;
@@ -130,7 +130,7 @@ void eraseMemory()
 	Flashed_offset = 0;
 }
 
-void unlockFlashAndEraseMemory()
+void unlockFlashAndEraseMemory(uint32_t nb_pageToerase)
 {
 	/* Unock the Flash to enable the flash control register access *************/
 	while(HAL_FLASH_Unlock()!=HAL_OK)
@@ -148,7 +148,7 @@ void unlockFlashAndEraseMemory()
 
 		EraseInitStruct.PageAddress = APP1_START;
 
-		EraseInitStruct.NbPages = FLASH_BANK_SIZE/FLASH_PAGE_SIZE_USER;
+		EraseInitStruct.NbPages = nb_pageToerase;
 		uint32_t PageError;
 
 		volatile HAL_StatusTypeDef status_erase;
@@ -161,6 +161,7 @@ void unlockFlashAndEraseMemory()
 	}
 
 	flashStatus = Unlocked;
+	Flashed_offset = 0;
 }
 
 void lockFlash()
@@ -248,44 +249,60 @@ void serial_send(uint8_t * Buf, uint16_t length)
 	 HAL_UART_Transmit(&huart3,Buf,length,50);
 }
 
-void messageHandler(uint8_t* Buf)
+int messageHandler(uint8_t* Buf, uint16_t length)
 {
-	if(string_compare((char*)Buf, ERASE_FLASH_MEMORY, strlen(ERASE_FLASH_MEMORY))
-			&& flashStatus != Unlocked)
+	uint32_t page_to_erase_nb = 0;
+	if((length > 6 ) && (length < 18) ) // we assume all commands have a length greater than 6
 	{
-		eraseMemory();
-		//CDC_Transmit_FS((uint8_t*)&"Flash: Erased!\n", strlen("Flash: Erased!\n"));
-		serial_send((uint8_t*)&"Flash: Erased!\n", strlen("Flash: Erased!\n"));
+
+//length = length -1; // remove the '!'
+
+		if(string_compare((char*)Buf, ERASE_FLASH_MEMORY, strlen(ERASE_FLASH_MEMORY))
+				&& flashStatus != Unlocked)
+		{
+			page_to_erase_nb = (Buf[length-2]<<24) +(Buf[length-3]<<16) +(Buf[length-4]<<8) +Buf[length-5];//32bit Word contains 4 Bytes
+			eraseMemory(page_to_erase_nb);
+			//CDC_Transmit_FS((uint8_t*)&"Flash: Erased!\n", strlen("Flash: Erased!\n"));
+			serial_send((uint8_t*)&"Flash: Erased!\n", strlen("Flash: Erased!\n"));
+			return 1;
+		}
+		else if(string_compare((char*)Buf, FLASHING_START, strlen(FLASHING_START)))
+		{
+			page_to_erase_nb = (Buf[length-2]<<24) +(Buf[length-3]<<16) +(Buf[length-4]<<8) +Buf[length-5];//32bit Word contains 4 Bytes
+			unlockFlashAndEraseMemory(page_to_erase_nb);
+			//CDC_Transmit_FS((uint8_t*)&"Flash: Unlocked!\n", strlen("Flash: Unlocked!\n"));
+ 			writed_packet = 0;
+			serial_send((uint8_t*)&"Flash: Unlocked!\n", strlen("Flash: Unlocked!\n"));
+			return 1;
+		}
+		else if(string_compare((char*)Buf, FLASHING_FINISH, strlen(FLASHING_FINISH))
+				  && flashStatus == Unlocked)
+		{
+			lockFlash();
+			//TODO : set BOOTLOADER_MODE_SET_ADDRESS to 0XFFFFFFFF to put bootloader in jumpmode after reset
+			//CDC_Transmit_FS((uint8_t*)&"Flash: Success!\n", strlen("Flash: Success!\n"));
+			serial_send((uint8_t*)&"Flash: Success! Rebooting ! \n", strlen("Flash: Success! Rebooting ! \n"));
+			clear_flashmode_flag();
+			HAL_Delay(100);
+			NVIC_SystemReset();
+
+		}
+		else if(string_compare((char*)Buf, FLASHING_ABORT, strlen(FLASHING_ABORT))
+				  && flashStatus == Unlocked)
+		{
+			lockFlash();
+			eraseMemory(page_to_erase_nb);
+			//CDC_Transmit_FS((uint8_t*)&"Flash: Aborted!\n", strlen("Flash: Aborted!\n"));
+			serial_send((uint8_t*)&"Flash: Aborted!\n", strlen("Flash: Aborted!\n"));
+			return 1;
+		}
+		else
+		{
+			//CDC_Transmit_FS((uint8_t*)&"Error: Incorrect step or unknown command!\n",
+			//	  strlen("Error: Incorrect step or unknown command!\n"));
+			serial_send((uint8_t*)&"Error: Incorrect step or unknown command!\n", strlen("Error: Incorrect step or unknown command!\n"));
+			return 0;
+		}
 	}
-	else if(string_compare((char*)Buf, FLASHING_START, strlen(FLASHING_START)))
-	{
-		unlockFlashAndEraseMemory();
-		//CDC_Transmit_FS((uint8_t*)&"Flash: Unlocked!\n", strlen("Flash: Unlocked!\n"));
-		serial_send((uint8_t*)&"Flash: Unlocked!\n", strlen("Flash: Unlocked!\n"));
-	}
-	else if(string_compare((char*)Buf, FLASHING_FINISH, strlen(FLASHING_FINISH))
-			  && flashStatus == Unlocked)
-	{
-		lockFlash();
-		//TODO : set BOOTLOADER_MODE_SET_ADDRESS to 0XFFFFFFFF to put bootloader in jumpmode after reset
-		//CDC_Transmit_FS((uint8_t*)&"Flash: Success!\n", strlen("Flash: Success!\n"));
-		serial_send((uint8_t*)&"Flash: Success! Rebooting ! \n", strlen("Flash: Success! Rebooting ! \n"));
-		clear_flashmode_flag();
-		HAL_Delay(100);
-		NVIC_SystemReset();
-	}
-	else if(string_compare((char*)Buf, FLASHING_ABORT, strlen(FLASHING_ABORT))
-			  && flashStatus == Unlocked)
-	{
-		lockFlash();
-		eraseMemory();
-		//CDC_Transmit_FS((uint8_t*)&"Flash: Aborted!\n", strlen("Flash: Aborted!\n"));
-		serial_send((uint8_t*)&"Flash: Aborted!\n", strlen("Flash: Aborted!\n"));
-	}
-	else
-	{
-		//CDC_Transmit_FS((uint8_t*)&"Error: Incorrect step or unknown command!\n",
-		//	  strlen("Error: Incorrect step or unknown command!\n"));
-		serial_send((uint8_t*)&"Error: Incorrect step or unknown command!\n", strlen("Error: Incorrect step or unknown command!\n"));
-	}
+	return 0;
 }

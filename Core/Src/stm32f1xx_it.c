@@ -218,8 +218,11 @@ void DMA1_Channel2_IRQHandler(void)
 /**
   * @brief This function handles USART3 global interrupt.
   */
+int packet_start = 0;
+int packet_end = 0;
 void USART3_IRQHandler(void)
 {
+
   /* USER CODE BEGIN USART3_IRQn 0 */
 
   /* USER CODE END USART3_IRQn 0 */
@@ -229,34 +232,54 @@ void USART3_IRQHandler(void)
 	HAL_UART_Receive(&huart3,&temp,1,50);
 
 
-	if(temp == '!') // if char is ! then command or packet  is complete
-	{
-		if(UART3_byte_counter == 4 && flashStatus == Unlocked) // si le buffer contient 4 octet et que la flash est deverouiller
-		{
-			uint32_t dataToFlash = (UART3_IT_buffer[3]<<24) +
-										  (UART3_IT_buffer[2]<<16) +
-										  (UART3_IT_buffer[1]<<8) +
-										  UART3_IT_buffer[0];//32bit Word contains 4 Bytes
-			flashWord(dataToFlash); // on ecrit en flash
+	 if(temp == '#' || packet_start == 1)
+	 {
+		 packet_start = 1;
+		 UART3_IT_buffer[UART3_byte_counter] = temp;
+		 UART3_byte_counter++;
 
-			UART3_byte_counter = 0;
-		}
-		else
-		{
-			messageHandler(UART3_IT_buffer);
-			UART3_byte_counter = 0;
-		}
-	}
-	else
-	{
-		UART3_IT_buffer[UART3_byte_counter] = temp;
-		UART3_byte_counter++;
-	}
+	 }
+	 if(temp == '!')
+	 {
+		 packet_end = 1;
+	 }
+
+	 if(packet_start == 1 && packet_end == 1) // if we got a packet
+	 {
+		 if(flashStatus == Unlocked && UART3_byte_counter == UPLOAD_FRAME_SIZE)  // if the status of flash is "Unlocked" and the packet is size 6
+		 {
+			 if(UART3_IT_buffer[0] == '#' && UART3_IT_buffer[UPLOAD_FRAME_SIZE-1] == '!') // if # is at begining and ! precisely at the index 6 --> its a flash packet !
+			 {
+				 //TODO : write the packet in flash after removing # & !
+				 uint32_t dataToFlash = (UART3_IT_buffer[4]<<24) +
+				 							  (UART3_IT_buffer[3]<<16) +
+				 							  (UART3_IT_buffer[2]<<8) +
+											  UART3_IT_buffer[1];//32bit Word contains 4 Bytes
+				 flashWord(dataToFlash);
+				 writed_packet++;
+				 UART3_byte_counter = 0; // we reset the buffer index
+				 packet_start = 0; //reset the packet status
+				 packet_end = 0;
+			 }
+		 }
+		 else //maybe its a command ?
+		 {
+			 if(messageHandler(UART3_IT_buffer,UART3_byte_counter) == 1) // if a command was deteted
+			 {
+				 UART3_byte_counter = 0; // we reset the buffer index
+				 packet_start = 0; //reset the packet status
+				 packet_end = 0;
+			 }
+			 //else we do nothing this is probably an uncomplete packet containing r '!' databyte
+			 packet_end = 0; //we wait  for the next '!' which maybe is delimiter if at the right position
+		 }
+	 }
 
 	 if(UART3_byte_counter > UART3_RX_BUFFER_SIZE)
 	 {
 		 UART3_byte_counter=0;
 	 }
+
   /* USER CODE END USART3_IRQn 1 */
 }
 

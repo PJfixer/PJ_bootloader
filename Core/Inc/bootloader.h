@@ -12,15 +12,18 @@
 #define BOOTLOADER_MODE_SET_ADDRESS 0x801FFFC
 
 #define APP1_START (0x08005000)			//Origin(datasheet) + Bootloader size (20kB)
-#define FLASH_BANK_SIZE  (0X5800) //22KB
+#define FLASH_BANK_SIZE  (0X6400) //25KB
+
+#define UPLOAD_PACKET_SIZE 4
+#define UPLOAD_FRAME_SIZE (UPLOAD_PACKET_SIZE+2) //we add '#' and '!' to delimit all packet
 
 
 
 
 #define ERASE_FLASH_MEMORY "#ERASE_MEM"
 #define FLASHING_START "#FLASH_START"
-#define FLASHING_FINISH "#FLASH_FINISH"
-#define FLASHING_ABORT "#FLASH_ABORT"
+#define FLASHING_FINISH "#FLASH_FINISH!"
+#define FLASHING_ABORT "#FLASH_ABORT!"
 
 #include "main.h"
 #include <string.h>
@@ -56,7 +59,7 @@ typedef struct
 
 
 uint32_t Flashed_offset;  // ???
-
+uint32_t writed_packet;
 FlashStatus flashStatus;
 Error_type bootloader_error_state ;
 
@@ -64,15 +67,15 @@ Error_type bootloader_error_state ;
 void bootloaderInit();
 void flashWord(uint32_t word);
 uint32_t readWord(uint32_t address);
-void eraseMemory();
-void unlockFlashAndEraseMemory();
+void eraseMemory(uint32_t nb_pageToerase);
+void unlockFlashAndEraseMemory(uint32_t nb_pageToerase);
 void lockFlash();
 void jumpToApp();
 void deinitEverything();
 uint8_t string_compare(char array1[], char array2[], uint16_t length);
 void errorBlink();
 void serial_send(uint8_t * Buf, uint16_t length);
-void messageHandler(uint8_t* Buf);
+int messageHandler(uint8_t* Buf, uint16_t length);
 void clear_flashmode_flag(void);
 
 
