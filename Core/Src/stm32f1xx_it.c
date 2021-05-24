@@ -43,8 +43,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-#define UART3_RX_BUFFER_SIZE 20
-uint8_t UART3_IT_buffer[UART3_RX_BUFFER_SIZE];
+
+uint8_t UART3_IT_buffer[UPLOAD_FRAME_SIZE];
 uint16_t UART3_byte_counter = 0 ;
 /* USER CODE END PV */
 
@@ -220,6 +220,7 @@ void DMA1_Channel2_IRQHandler(void)
   */
 int packet_start = 0;
 int packet_end = 0;
+uint32_t packetTowrite = 0;
 void USART3_IRQHandler(void)
 {
 
@@ -250,16 +251,15 @@ void USART3_IRQHandler(void)
 		 {
 			 if(UART3_IT_buffer[0] == '#' && UART3_IT_buffer[UPLOAD_FRAME_SIZE-1] == '!') // if # is at begining and ! precisely at the index 6 --> its a flash packet !
 			 {
+				__HAL_UART_DISABLE_IT(&huart3,UART_IT_RXNE);//enable uart  RX interupt here
+				 packetTowrite = 1;
 				 //TODO : write the packet in flash after removing # & !
-				 uint32_t dataToFlash = (UART3_IT_buffer[4]<<24) +
+				/* uint32_t dataToFlash = (UART3_IT_buffer[4]<<24) +
 				 							  (UART3_IT_buffer[3]<<16) +
 				 							  (UART3_IT_buffer[2]<<8) +
 											  UART3_IT_buffer[1];//32bit Word contains 4 Bytes
-				 flashWord(dataToFlash);
-				 writed_packet++;
-				 UART3_byte_counter = 0; // we reset the buffer index
-				 packet_start = 0; //reset the packet status
-				 packet_end = 0;
+				 flashWord(dataToFlash); */
+
 			 }
 		 }
 		 else //maybe its a command ?
@@ -275,10 +275,12 @@ void USART3_IRQHandler(void)
 		 }
 	 }
 
-	 if(UART3_byte_counter > UART3_RX_BUFFER_SIZE)
+	 if(UART3_byte_counter > UPLOAD_FRAME_SIZE)
 	 {
 		 UART3_byte_counter=0;
 	 }
+
+
 
   /* USER CODE END USART3_IRQn 1 */
 }

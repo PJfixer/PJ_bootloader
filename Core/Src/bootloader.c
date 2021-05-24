@@ -54,7 +54,7 @@ void bootloaderInit()
 	}
 }
 
-void flashWord(uint32_t dataToFlash)
+int flashWord(uint32_t dataToFlash)
 {
 	if(flashStatus == Unlocked)
 	{
@@ -71,12 +71,14 @@ void flashWord(uint32_t dataToFlash)
 	  if(status != HAL_OK)
 	  {
 		  //CDC_Transmit_FS((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n"));
-		  serial_send((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n"));
+		  //serial_send((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n"));
+		  return -1;
 	  }else
 	  {//Word Flash Successful
 		  Flashed_offset += 4;
 		  //CDC_Transmit_FS((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n"));
-		  serial_send((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n"));
+		  //serial_send((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n"));
+		  return 0;
 
 	  }
 	}else
@@ -84,6 +86,7 @@ void flashWord(uint32_t dataToFlash)
 	  //CDC_Transmit_FS((uint8_t*)&"Error: Memory not unlocked nor erased!\n",
 		//	  strlen("Error: Memory not unlocked nor erased!\n"));
 	  serial_send((uint8_t*)&"Error: Memory not unlocked nor erased!\n", strlen("Error: Memory not unlocked nor erased!\n"));
+	  return -2;
 	}
 }
 
@@ -249,6 +252,37 @@ void serial_send(uint8_t * Buf, uint16_t length)
 	 HAL_UART_Transmit(&huart3,Buf,length,50);
 }
 
+int write_big_packet_flash(uint8_t * Buf)
+{
+	uint8_t *start_addr = &Buf[1]; // we skip "#"
+	uint16_t buffer_idx = 0;
+	 for(int i =0;i<(UPLOAD_PACKET_SIZE/4);i++)
+	 {
+		/* uint8_t a = (start_addr[3+buffer_idx]);
+		 uint8_t b = (start_addr[2+buffer_idx]) ;
+		 uint8_t c =  (start_addr[1+buffer_idx]);
+		 uint8_t d = start_addr[0+buffer_idx]; */
+
+		 uint32_t dataToFlash = (start_addr[3+buffer_idx]<<24) +
+													  (start_addr[2+buffer_idx]<<16) +
+													  (start_addr[1+buffer_idx]<<8) +
+													  start_addr[0+buffer_idx];//32bit Word contains 4 Bytes
+
+
+		 if(flashWord(dataToFlash) == -1)
+		 {
+			return -1;
+		 }
+
+		/* if(i == 0)
+		 {
+			 uint8_t debug_purpose_only =1;
+		 }*/
+		 buffer_idx += 4;
+	 }
+	 return 0;
+}
+
 int messageHandler(uint8_t* Buf, uint16_t length)
 {
 	uint32_t page_to_erase_nb = 0;
@@ -296,13 +330,13 @@ int messageHandler(uint8_t* Buf, uint16_t length)
 			serial_send((uint8_t*)&"Flash: Aborted!\n", strlen("Flash: Aborted!\n"));
 			return 1;
 		}
-		else
+		/*else
 		{
 			//CDC_Transmit_FS((uint8_t*)&"Error: Incorrect step or unknown command!\n",
 			//	  strlen("Error: Incorrect step or unknown command!\n"));
 			serial_send((uint8_t*)&"Error: Incorrect step or unknown command!\n", strlen("Error: Incorrect step or unknown command!\n"));
 			return 0;
-		}
+		}*/
 	}
 	return 0;
 }

@@ -71,7 +71,11 @@ static void MX_USART3_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	extern uint8_t UART3_IT_buffer[UPLOAD_FRAME_SIZE];
+	extern uint16_t UART3_byte_counter;
+	extern int packet_start ;
+	extern int packet_end ;
+	extern uint32_t packetTowrite  ;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -95,6 +99,7 @@ int main(void)
   MX_DMA_Init();
   MX_TIM1_Init();
   MX_USART3_UART_Init();
+
   /* USER CODE BEGIN 2 */
   serial_send((uint8_t*)&"PJ bootloader start\n", strlen("PJ bootloader start\n"));
   bootloaderInit();
@@ -105,8 +110,42 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(packetTowrite == 1)
+	  {
+		  if(write_big_packet_flash(UART3_IT_buffer) == 0)
+		  {
+
+			  writed_packet++;
+			  memset(UART3_IT_buffer,0,UPLOAD_FRAME_SIZE);
+			  UART3_byte_counter = 0; // we reset the buffer index
+			  packet_start = 0; //reset the packet status
+			  packet_end = 0;
+
+			  packetTowrite =0;
+			  __HAL_UART_ENABLE_IT(&huart3,UART_IT_RXNE);// we set back uart  RX interupt for next packet
+			  serial_send((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n")); // UPLOAD_PACKET_SIZE (256) bytes flashed
+		  }
+		  else
+		  {
+			  memset(UART3_IT_buffer,0,UPLOAD_FRAME_SIZE);
+			  UART3_byte_counter = 0; // we reset the buffer index
+			  packet_start = 0; //reset the packet status
+			  packet_end = 0;
+
+			  packetTowrite =0;
+			  __HAL_UART_ENABLE_IT(&huart3,UART_IT_RXNE);//we set back uart  RX interupt for next packet
+			  serial_send((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n")); // indicate error while trying to flash the last UPLOAD_PACKET_SIZE (256) bytes
+
+		  }
+
+
+
+
+
+
+	  }
     /* USER CODE END WHILE */
-   int gg_t = 32 ;
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

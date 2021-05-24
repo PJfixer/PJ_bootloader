@@ -12,9 +12,8 @@
 #define BOOTLOADER_MODE_SET_ADDRESS 0x801FFFC
 
 #define APP1_START (0x08005000)			//Origin(datasheet) + Bootloader size (20kB)
-#define FLASH_BANK_SIZE  (0X6400) //25KB
 
-#define UPLOAD_PACKET_SIZE 4
+#define UPLOAD_PACKET_SIZE 256
 #define UPLOAD_FRAME_SIZE (UPLOAD_PACKET_SIZE+2) //we add '#' and '!' to delimit all packet
 
 
@@ -65,7 +64,7 @@ Error_type bootloader_error_state ;
 
 
 void bootloaderInit();
-void flashWord(uint32_t word);
+int flashWord(uint32_t word);
 uint32_t readWord(uint32_t address);
 void eraseMemory(uint32_t nb_pageToerase);
 void unlockFlashAndEraseMemory(uint32_t nb_pageToerase);
@@ -76,6 +75,7 @@ uint8_t string_compare(char array1[], char array2[], uint16_t length);
 void errorBlink();
 void serial_send(uint8_t * Buf, uint16_t length);
 int messageHandler(uint8_t* Buf, uint16_t length);
+int write_big_packet_flash(uint8_t * Buf);
 void clear_flashmode_flag(void);
 
 
