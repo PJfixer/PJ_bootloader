@@ -1,0 +1,15 @@
+core_cm3.h:1762:34:__NVIC_SystemReset	4	static,ignoring_inline_asm
+bootloader.c:18:6:bootloaderInit	16	static
+bootloader.c:66:5:flashWord	40	static
+bootloader.c:102:10:readWord	24	static
+bootloader.c:109:6:eraseMemory	40	static
+bootloader.c:145:6:unlockFlashAndEraseMemory	40	static
+bootloader.c:179:6:lockFlash	8	static
+bootloader.c:192:6:jumpToApp	24	static,ignoring_inline_asm
+bootloader.c:203:6:deinitEverything	8	static
+bootloader.c:223:6:clear_flashmode_flag	32	static
+bootloader.c:259:9:string_compare	32	static
+bootloader.c:273:6:serial_send	16	static
+bootloader.c:278:5:write_big_packet_flash	32	static
+bootloader.c:310:6:errorJump	8	static
+bootloader.c:315:5:messageHandler	24	static

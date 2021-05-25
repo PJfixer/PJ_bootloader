@@ -46,6 +46,11 @@
 
 uint8_t UART3_IT_buffer[UPLOAD_FRAME_SIZE];
 uint16_t UART3_byte_counter = 0 ;
+uint8_t packet_start = 0;
+uint8_t packet_end = 0;
+
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,6 +66,7 @@ uint16_t UART3_byte_counter = 0 ;
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_tim1_ch1;
 extern UART_HandleTypeDef huart3;
+extern volatile uint8_t  g_chunk_rdy;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -91,6 +97,7 @@ void HardFault_Handler(void)
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
+	  HAL_GPIO_WritePin(LED_PIN_GPIO_Port, LED_PIN_Pin, GPIO_PIN_RESET);
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
@@ -218,11 +225,10 @@ void DMA1_Channel2_IRQHandler(void)
 /**
   * @brief This function handles USART3 global interrupt.
   */
-int packet_start = 0;
-int packet_end = 0;
-uint32_t packetTowrite = 0;
+
 void USART3_IRQHandler(void)
 {
+
 
   /* USER CODE BEGIN USART3_IRQn 0 */
 
@@ -231,6 +237,7 @@ void USART3_IRQHandler(void)
   /* USER CODE BEGIN USART3_IRQn 1 */
 	uint8_t temp ;
 	HAL_UART_Receive(&huart3,&temp,1,50);
+
 
 
 	 if(temp == '#' || packet_start == 1)
@@ -251,14 +258,14 @@ void USART3_IRQHandler(void)
 		 {
 			 if(UART3_IT_buffer[0] == '#' && UART3_IT_buffer[UPLOAD_FRAME_SIZE-1] == '!') // if # is at begining and ! precisely at the index 6 --> its a flash packet !
 			 {
-				__HAL_UART_DISABLE_IT(&huart3,UART_IT_RXNE);//enable uart  RX interupt here
-				 packetTowrite = 1;
+
+				__HAL_UART_DISABLE_IT(&huart3,UART_IT_RXNE);//disable uart  RX interupt here
+
+				g_chunk_rdy = 1;
+				packet_start = 0; //reset the packet status
+				packet_end = 0;
 				 //TODO : write the packet in flash after removing # & !
-				/* uint32_t dataToFlash = (UART3_IT_buffer[4]<<24) +
-				 							  (UART3_IT_buffer[3]<<16) +
-				 							  (UART3_IT_buffer[2]<<8) +
-											  UART3_IT_buffer[1];//32bit Word contains 4 Bytes
-				 flashWord(dataToFlash); */
+
 
 			 }
 		 }

@@ -45,6 +45,12 @@ DMA_HandleTypeDef hdma_tim1_ch1;
 
 UART_HandleTypeDef huart3;
 
+volatile uint8_t  g_chunk_rdy = 0;
+
+extern uint8_t UART3_IT_buffer[UPLOAD_FRAME_SIZE];
+extern uint16_t UART3_byte_counter;
+
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -71,11 +77,8 @@ static void MX_USART3_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	extern uint8_t UART3_IT_buffer[UPLOAD_FRAME_SIZE];
-	extern uint16_t UART3_byte_counter;
-	extern int packet_start ;
-	extern int packet_end ;
-	extern uint32_t packetTowrite  ;
+
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -110,18 +113,20 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(packetTowrite == 1)
+	  if(g_chunk_rdy == 1)
 	  {
+		  HAL_GPIO_WritePin(LED_PIN_GPIO_Port, LED_PIN_Pin, GPIO_PIN_RESET);
+
+
 		  if(write_big_packet_flash(UART3_IT_buffer) == 0)
 		  {
 
 			  writed_packet++;
 			  memset(UART3_IT_buffer,0,UPLOAD_FRAME_SIZE);
 			  UART3_byte_counter = 0; // we reset the buffer index
-			  packet_start = 0; //reset the packet status
-			  packet_end = 0;
 
-			  packetTowrite =0;
+
+			  g_chunk_rdy = 0 ;
 			  __HAL_UART_ENABLE_IT(&huart3,UART_IT_RXNE);// we set back uart  RX interupt for next packet
 			  serial_send((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n")); // UPLOAD_PACKET_SIZE (256) bytes flashed
 		  }
@@ -129,10 +134,9 @@ int main(void)
 		  {
 			  memset(UART3_IT_buffer,0,UPLOAD_FRAME_SIZE);
 			  UART3_byte_counter = 0; // we reset the buffer index
-			  packet_start = 0; //reset the packet status
-			  packet_end = 0;
 
-			  packetTowrite =0;
+
+			  g_chunk_rdy = 0 ;
 			  __HAL_UART_ENABLE_IT(&huart3,UART_IT_RXNE);//we set back uart  RX interupt for next packet
 			  serial_send((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n")); // indicate error while trying to flash the last UPLOAD_PACKET_SIZE (256) bytes
 
@@ -282,7 +286,7 @@ static void MX_USART3_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART3_Init 2 */
-
+  __HAL_UART_ENABLE_IT(&huart3,UART_IT_RXNE);//enable uart  RX interupt here
   /* USER CODE END USART3_Init 2 */
 
 }
@@ -310,11 +314,23 @@ static void MX_DMA_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+	 GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(LED_PIN_GPIO_Port, LED_PIN_Pin, GPIO_PIN_SET);
+
+    /*Configure GPIO pin : LED_PIN_Pin */
+    GPIO_InitStruct.Pin = LED_PIN_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(LED_PIN_GPIO_Port, &GPIO_InitStruct);
 
 }
 

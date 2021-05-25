@@ -57,6 +57,8 @@ typedef struct
 } JumpStruct;
 
 
+
+
 uint32_t Flashed_offset;  // ???
 uint32_t writed_packet;
 FlashStatus flashStatus;
@@ -72,7 +74,7 @@ void lockFlash();
 void jumpToApp();
 void deinitEverything();
 uint8_t string_compare(char array1[], char array2[], uint16_t length);
-void errorBlink();
+void errorJump();
 void serial_send(uint8_t * Buf, uint16_t length);
 int messageHandler(uint8_t* Buf, uint16_t length);
 int write_big_packet_flash(uint8_t * Buf);

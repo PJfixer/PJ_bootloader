@@ -11,6 +11,9 @@
 #include "bootloader.h"
 
 extern UART_HandleTypeDef huart3;
+extern TIM_HandleTypeDef htim1;
+
+
 
 void bootloaderInit()
 {
@@ -20,7 +23,7 @@ void bootloaderInit()
 
 	if(readWord(BOOTLOADER_MODE_SET_ADDRESS) == 0xC0FFEE00)
 	{
-		__HAL_UART_ENABLE_IT(&huart3,UART_IT_RXNE);//enable uart  RX interupt here
+
 		bootloaderMode = FlashMode;
 	}
 	else
@@ -33,7 +36,7 @@ void bootloaderInit()
 	if(bootloaderMode == JumpMode)
 	{
 
-		/*	//Check if the application is there
+			//Check if the application is there
 			uint8_t emptyCellCount = 0;
 			for(uint8_t i=0; i<10; i++)
 			{
@@ -42,17 +45,23 @@ void bootloaderInit()
 			}
 
 			if(emptyCellCount != 10)
-				jumpToApp(APP1_START);
-			else
-				errorBlink();
+			{
 
-		*/
+				jumpToApp(APP1_START);
+			}
+			else
+			{
+				errorJump();
+			}
+
+
 	}
 	else
 	{
 
 	}
 }
+
 
 int flashWord(uint32_t dataToFlash)
 {
@@ -193,8 +202,22 @@ void jumpToApp(const uint32_t address)
 
 void deinitEverything()
 {
+
 	//-- reset peripherals to guarantee flawless start of user application
 	//TODO : deinit hardware
+	__HAL_UART_DISABLE_IT(&huart3,UART_IT_RXNE);
+	HAL_UART_DeInit(&huart3);
+	HAL_TIM_PWM_DeInit(&htim1);
+	HAL_NVIC_DisableIRQ(DMA1_Channel2_IRQn);
+	__HAL_RCC_DMA1_CLK_DISABLE();
+	__HAL_RCC_GPIOA_CLK_DISABLE();
+	__HAL_RCC_GPIOB_CLK_DISABLE();
+	__HAL_RCC_GPIOD_CLK_DISABLE();
+	HAL_RCC_DeInit();
+	HAL_DeInit();
+	SysTick->CTRL = 0;
+	SysTick->LOAD = 0;
+	SysTick->VAL = 0;
 }
 
 void clear_flashmode_flag(void)
@@ -254,6 +277,7 @@ void serial_send(uint8_t * Buf, uint16_t length)
 
 int write_big_packet_flash(uint8_t * Buf)
 {
+
 	uint8_t *start_addr = &Buf[1]; // we skip "#"
 	uint16_t buffer_idx = 0;
 	 for(int i =0;i<(UPLOAD_PACKET_SIZE/4);i++)
@@ -281,6 +305,11 @@ int write_big_packet_flash(uint8_t * Buf)
 		 buffer_idx += 4;
 	 }
 	 return 0;
+}
+
+void errorJump(void)
+{
+	serial_send((uint8_t*)&"Error: no fw at jump addr\n", strlen("Error: no fw at jump addr\n"));
 }
 
 int messageHandler(uint8_t* Buf, uint16_t length)

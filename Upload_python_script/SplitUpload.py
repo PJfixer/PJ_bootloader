@@ -93,16 +93,19 @@ if __name__ == '__main__':
 		response = read_port()
 		if(response.rstrip().decode('utf-8') == "Flash: Unlocked!"):
 			print("set Flash mode : SUCCESS \n")
+			time.sleep(3)
 			print("start flashing APP FW \n")
 			push_index = 0
 			for chunks in list1:
-				print("send block : "+str(push_index)+"/"+str(len(list1)),end='\r')
+				
 				push_chunks(chunks)
-				time.sleep(0.03)
+				time.sleep(0.5)
 				response = read_port()
 				
 				if(response.rstrip().decode('utf-8') == "Flash: OK"): #if the block is succesfully loaded
 					push_index += 1
+					print("send block : "+str(push_index)+"/"+str(len(list1)),end='\r')
+					
 			
 			
 				else:
@@ -117,7 +120,7 @@ if __name__ == '__main__':
 			time.sleep(0.1)
 			response = read_port()
 			if(response.rstrip().decode('utf-8') == "Flash: Success! Rebooting !"):
-				print("firmware update complete succesfully")
+				print("\n firmware update complete succesfully")
 			else:
 				print("set FLASH_FINISH & REBOOT : FAILED")
 				print(response)
