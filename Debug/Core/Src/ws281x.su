@@ -1,0 +1,8 @@
+ws281x.c:23:6:set_Led_color	16	static
+ws281x.c:32:6:set_All_Leds_color	24	static
+ws281x.c:44:10:get_Led_value	16	static
+ws281x.c:49:6:led_set_duty	24	static
+ws281x.c:89:6:led_set_reset_pulse	24	static
+ws281x.c:118:6:led_update	8	static
+ws281x.c:140:6:HAL_TIM_PWM_PulseFinishedCallback	16	static
+ws281x.c:169:6:HAL_TIM_PWM_PulseFinishedHalfCpltCallback	16	static

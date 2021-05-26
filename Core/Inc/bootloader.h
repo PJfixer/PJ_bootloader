@@ -9,9 +9,9 @@
 #define CORE_INC_BOOTLOADER_H_
 
 #define FLASH_PAGE_SIZE_USER (0x400)	//1kB datasheet
-#define BOOTLOADER_MODE_SET_ADDRESS 0x801FFFC
+#define BOOTLOADER_MODE_SET_ADDRESS  (0x08002C00) // 11K
 
-#define APP1_START (0x08005000)			//Origin(datasheet) + Bootloader size (20kB)
+#define APP1_START (0x08003000)  // User app start addr 12K
 
 #define UPLOAD_PACKET_SIZE 256
 #define UPLOAD_FRAME_SIZE (UPLOAD_PACKET_SIZE+2) //we add '#' and '!' to delimit all packet
@@ -63,7 +63,7 @@ uint32_t Flashed_offset;  // ???
 uint32_t writed_packet;
 FlashStatus flashStatus;
 Error_type bootloader_error_state ;
-
+BootloaderMode bootloaderMode;
 
 void bootloaderInit();
 int flashWord(uint32_t word);

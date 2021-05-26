@@ -9,6 +9,7 @@
 
 
 #include "bootloader.h"
+#include "ws281x.h"
 
 extern UART_HandleTypeDef huart3;
 extern TIM_HandleTypeDef htim1;
@@ -19,7 +20,7 @@ void bootloaderInit()
 {
 	Flashed_offset = 0; // we flash nothing yet set to 0
 	flashStatus = Unerased; // we erase nothing yet set Unerased
-	BootloaderMode bootloaderMode;
+
 
 	if(readWord(BOOTLOADER_MODE_SET_ADDRESS) == 0xC0FFEE00)
 	{
@@ -79,21 +80,16 @@ int flashWord(uint32_t dataToFlash)
 	  }while(status != HAL_OK && flash_attempt < 10 && dataToFlash == readWord(address));
 	  if(status != HAL_OK)
 	  {
-		  //CDC_Transmit_FS((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n"));
-		  //serial_send((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n"));
 		  return -1;
+
 	  }else
 	  {//Word Flash Successful
 		  Flashed_offset += 4;
-		  //CDC_Transmit_FS((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n"));
-		  //serial_send((uint8_t*)&"Flash: OK\n", strlen("Flash: OK\n"));
-		  return 0;
 
+		  return 0;
 	  }
 	}else
 	{
-	  //CDC_Transmit_FS((uint8_t*)&"Error: Memory not unlocked nor erased!\n",
-		//	  strlen("Error: Memory not unlocked nor erased!\n"));
 	  serial_send((uint8_t*)&"Error: Memory not unlocked nor erased!\n", strlen("Error: Memory not unlocked nor erased!\n"));
 	  return -2;
 	}
@@ -168,7 +164,7 @@ void unlockFlashAndEraseMemory(uint32_t nb_pageToerase)
 
 		if(status_erase != HAL_OK)
 		{
-			//errorBlink();
+			serial_send((uint8_t*)&"error during erasing\n", strlen("error during erasing\n"));
 		}
 	}
 
@@ -309,8 +305,17 @@ int write_big_packet_flash(uint8_t * Buf)
 
 void errorJump(void)
 {
-	serial_send((uint8_t*)&"Error: no fw at jump addr\n", strlen("Error: no fw at jump addr\n"));
+	while(1)
+	{
+		 set_All_Leds_color(255,0,0);
+		 led_update();
+		 HAL_Delay(500);
+		 set_All_Leds_color(0,0,0);
+		 led_update();
+		 HAL_Delay(500);
+	}
 }
+
 
 int messageHandler(uint8_t* Buf, uint16_t length)
 {
@@ -346,7 +351,15 @@ int messageHandler(uint8_t* Buf, uint16_t length)
 			//CDC_Transmit_FS((uint8_t*)&"Flash: Success!\n", strlen("Flash: Success!\n"));
 			serial_send((uint8_t*)&"Flash: Success! Rebooting ! \n", strlen("Flash: Success! Rebooting ! \n"));
 			clear_flashmode_flag();
-			HAL_Delay(100);
+			for(uint8_t i = 0;i < 5;i++)
+			{
+				set_All_Leds_color(0,255,0);
+				led_update();
+				HAL_Delay(100);
+				set_All_Leds_color(0,255,0);
+			    led_update();
+				HAL_Delay(100);
+			}
 			NVIC_SystemReset();
 
 		}

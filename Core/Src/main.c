@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "bootloader.h"
+#include "ws281x.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,11 +45,11 @@ TIM_HandleTypeDef htim1;
 DMA_HandleTypeDef hdma_tim1_ch1;
 
 UART_HandleTypeDef huart3;
-
 volatile uint8_t  g_chunk_rdy = 0;
-
 extern uint8_t UART3_IT_buffer[UPLOAD_FRAME_SIZE];
 extern uint16_t UART3_byte_counter;
+
+
 
 
 /* USER CODE BEGIN PV */
@@ -77,6 +78,10 @@ static void MX_USART3_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	//led animation vars
+	uint8_t led_sens = 0;
+	uint8_t led_idx =0;
+	uint32_t led_tickstart = 0;
 
 
   /* USER CODE END 1 */
@@ -102,6 +107,8 @@ int main(void)
   MX_DMA_Init();
   MX_TIM1_Init();
   MX_USART3_UART_Init();
+  set_All_Leds_color(0,0,0);
+  led_update();
 
   /* USER CODE BEGIN 2 */
   serial_send((uint8_t*)&"PJ bootloader start\n", strlen("PJ bootloader start\n"));
@@ -113,9 +120,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(g_chunk_rdy == 1)
+	  if(g_chunk_rdy == 1) //firmware update process
 	  {
-		  HAL_GPIO_WritePin(LED_PIN_GPIO_Port, LED_PIN_Pin, GPIO_PIN_RESET);
+
 
 
 		  if(write_big_packet_flash(UART3_IT_buffer) == 0)
@@ -141,13 +148,40 @@ int main(void)
 			  serial_send((uint8_t*)&"Flashing Error!\n", strlen("Flashing Error!\n")); // indicate error while trying to flash the last UPLOAD_PACKET_SIZE (256) bytes
 
 		  }
-
-
-
-
-
-
 	  }
+
+	  if(bootloaderMode == FlashMode)// if we are in firmware update mode
+	  {
+		  if((HAL_GetTick() - led_tickstart) < 500) // if 500 ms have ellapsed update led pattern
+		  {
+			  if(led_sens == 0) //left to right
+			  {
+				  set_All_Leds_color(0,0,0);
+				  set_Led_color(led_idx,255,255,255);
+				  led_idx++;
+			  }
+			  else //right to left
+			  {
+				  set_All_Leds_color(0,0,0);
+				  set_Led_color(led_idx,255,255,255);
+				  led_idx--;
+			  }
+			  led_update();
+			  if(led_idx == (NUM_LEDS-1)) //change animation sens
+			  {
+				  led_sens = 1;
+			  }
+			  if(led_idx == 0)//change animation sens
+			  {
+				  led_sens = 0;
+			  }
+
+			  led_tickstart = HAL_GetTick();
+		  }
+	  }
+
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -314,7 +348,7 @@ static void MX_DMA_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
-	 GPIO_InitTypeDef GPIO_InitStruct = {0};
+
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOD_CLK_ENABLE();
@@ -322,15 +356,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
 
-  /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(LED_PIN_GPIO_Port, LED_PIN_Pin, GPIO_PIN_SET);
 
-    /*Configure GPIO pin : LED_PIN_Pin */
-    GPIO_InitStruct.Pin = LED_PIN_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(LED_PIN_GPIO_Port, &GPIO_InitStruct);
 
 }
 
