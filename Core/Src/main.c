@@ -107,6 +107,7 @@ int main(void)
   MX_DMA_Init();
   MX_TIM1_Init();
   MX_USART3_UART_Init();
+  HAL_Delay(1);
   set_All_Leds_color(0,0,0);
   led_update();
 
@@ -150,20 +151,20 @@ int main(void)
 		  }
 	  }
 
-	  if(bootloaderMode == FlashMode)// if we are in firmware update mode
+	  if(bootloaderMode == FlashMode && reboot_sig != 1)// if we are in firmware update mode
 	  {
-		  if((HAL_GetTick() - led_tickstart) < 500) // if 500 ms have ellapsed update led pattern
+		  if((HAL_GetTick() - led_tickstart) > 200) // if 500 ms have ellapsed update led pattern
 		  {
 			  if(led_sens == 0) //left to right
 			  {
 				  set_All_Leds_color(0,0,0);
-				  set_Led_color(led_idx,255,255,255);
+				  set_Led_color(led_idx,0,0,255);
 				  led_idx++;
 			  }
 			  else //right to left
 			  {
 				  set_All_Leds_color(0,0,0);
-				  set_Led_color(led_idx,255,255,255);
+				  set_Led_color(led_idx,0,0,255);
 				  led_idx--;
 			  }
 			  led_update();
@@ -178,6 +179,10 @@ int main(void)
 
 			  led_tickstart = HAL_GetTick();
 		  }
+	  }
+	  else
+	  {
+		  reboot();
 	  }
 
 
@@ -247,9 +252,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
+  htim1.Init.Prescaler = 3;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 90;
+  htim1.Init.Period = 23;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;

@@ -316,6 +316,24 @@ void errorJump(void)
 	}
 }
 
+void reboot(void)
+{
+	for(uint8_t i = 0; i<10;i++)
+	{
+		set_All_Leds_color(0,0,0);
+		led_update();
+		HAL_Delay(100);
+		set_All_Leds_color(0,255,0);
+		led_update();
+		HAL_Delay(100);
+
+	}
+	set_All_Leds_color(0,0,0);
+	led_update();
+	HAL_Delay(1);
+	NVIC_SystemReset();
+
+}
 
 int messageHandler(uint8_t* Buf, uint16_t length)
 {
@@ -350,17 +368,11 @@ int messageHandler(uint8_t* Buf, uint16_t length)
 			//TODO : set BOOTLOADER_MODE_SET_ADDRESS to 0XFFFFFFFF to put bootloader in jumpmode after reset
 			//CDC_Transmit_FS((uint8_t*)&"Flash: Success!\n", strlen("Flash: Success!\n"));
 			serial_send((uint8_t*)&"Flash: Success! Rebooting ! \n", strlen("Flash: Success! Rebooting ! \n"));
+
 			clear_flashmode_flag();
-			for(uint8_t i = 0;i < 5;i++)
-			{
-				set_All_Leds_color(0,255,0);
-				led_update();
-				HAL_Delay(100);
-				set_All_Leds_color(0,255,0);
-			    led_update();
-				HAL_Delay(100);
-			}
-			NVIC_SystemReset();
+
+			reboot_sig = 1;
+
 
 		}
 		else if(string_compare((char*)Buf, FLASHING_ABORT, strlen(FLASHING_ABORT))

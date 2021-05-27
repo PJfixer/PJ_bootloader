@@ -1,6 +1,5 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (9-2020-q2-update)
 ################################################################################
 
 -include ../makefile.init
@@ -29,12 +28,6 @@ endif
 
 -include ../makefile.defs
 
-OPTIONAL_TOOL_DEPS := \
-$(wildcard ../makefile.defs) \
-$(wildcard ../makefile.init) \
-$(wildcard ../makefile.targets) \
-
-
 BUILD_ARTIFACT_NAME := PJ_bootloader
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX := 
@@ -61,22 +54,22 @@ all: main-build
 main-build: PJ_bootloader.elf secondary-outputs
 
 # Tool invocations
-PJ_bootloader.elf: $(OBJS) $(USER_OBJS) C:\3d_print\PJ_bootloader\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "PJ_bootloader.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\3d_print\PJ_bootloader\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="PJ_bootloader.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+PJ_bootloader.elf: $(OBJS) $(USER_OBJS) C:\Users\Pjfixer\Documents\PJ_bootloader\STM32F103C8TX_FLASH.ld
+	arm-none-eabi-gcc -o "PJ_bootloader.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\Pjfixer\Documents\PJ_bootloader\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="PJ_bootloader.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+default.size.stdout: $(EXECUTABLES)
 	arm-none-eabi-size  $(EXECUTABLES)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-PJ_bootloader.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+PJ_bootloader.list: $(EXECUTABLES)
 	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "PJ_bootloader.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
-PJ_bootloader.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+PJ_bootloader.bin: $(EXECUTABLES)
 	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "PJ_bootloader.bin"
 	@echo 'Finished building: $@'
 	@echo ' '

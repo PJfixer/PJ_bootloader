@@ -93,7 +93,7 @@ if __name__ == '__main__':
 		response = read_port()
 		if(response.rstrip().decode('utf-8') == "Flash: Unlocked!"):
 			print("set Flash mode : SUCCESS \n")
-			time.sleep(3)
+			time.sleep(0.5)
 			print("start flashing APP FW \n")
 			push_index = 0
 			for chunks in list1:

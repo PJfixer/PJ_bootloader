@@ -9,9 +9,9 @@
 #define CORE_INC_BOOTLOADER_H_
 
 #define FLASH_PAGE_SIZE_USER (0x400)	//1kB datasheet
-#define BOOTLOADER_MODE_SET_ADDRESS  (0x08002C00) // 11K
+#define BOOTLOADER_MODE_SET_ADDRESS  (0x08002C00) // 12K  0x08002C04
 
-#define APP1_START (0x08003000)  // User app start addr 12K
+#define APP1_START (0x08003000)  // User app start addr 13K
 
 #define UPLOAD_PACKET_SIZE 256
 #define UPLOAD_FRAME_SIZE (UPLOAD_PACKET_SIZE+2) //we add '#' and '!' to delimit all packet
@@ -64,6 +64,7 @@ uint32_t writed_packet;
 FlashStatus flashStatus;
 Error_type bootloader_error_state ;
 BootloaderMode bootloaderMode;
+volatile uint8_t reboot_sig;
 
 void bootloaderInit();
 int flashWord(uint32_t word);
@@ -79,6 +80,6 @@ void serial_send(uint8_t * Buf, uint16_t length);
 int messageHandler(uint8_t* Buf, uint16_t length);
 int write_big_packet_flash(uint8_t * Buf);
 void clear_flashmode_flag(void);
-
+void reboot(void);
 
 #endif /* CORE_INC_BOOTLOADER_H_ */
