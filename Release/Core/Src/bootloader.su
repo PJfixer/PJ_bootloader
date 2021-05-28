@@ -1,0 +1,15 @@
+bootloader.c:98:10:readWord	0	static
+bootloader.c:105:6:eraseMemory	32	static
+bootloader.c:175:6:lockFlash	8	static
+bootloader.c:199:6:deinitEverything	8	static
+bootloader.c:188:6:jumpToApp	8	static,ignoring_inline_asm
+bootloader.c:219:6:clear_flashmode_flag	32	static
+bootloader.c:255:9:string_compare	16	static
+bootloader.c:269:6:serial_send	0	static
+bootloader.c:67:5:flashWord	32	static
+bootloader.c:141:6:unlockFlashAndEraseMemory	40	static
+bootloader.c:274:5:write_big_packet_flash	16	static
+bootloader.c:306:6:errorJump	8	static
+bootloader.c:19:6:bootloaderInit	8	static
+bootloader.c:319:6:reboot	8	static,ignoring_inline_asm
+bootloader.c:338:5:messageHandler	16	static

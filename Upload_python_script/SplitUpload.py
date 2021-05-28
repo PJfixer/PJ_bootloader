@@ -31,7 +31,7 @@ if __name__ == '__main__':
 	args = parser.parse_args()
     
      #opening serial port 
-	serial = serial.Serial(args.port, 115200)
+	serial = serial.Serial(args.port, 9600)
 
 
 	
@@ -89,11 +89,11 @@ if __name__ == '__main__':
 		flash_command += b'!'
 		serial.write(flash_command)
 		
-		time.sleep(0.1)
+		time.sleep(0.5)
 		response = read_port()
 		if(response.rstrip().decode('utf-8') == "Flash: Unlocked!"):
 			print("set Flash mode : SUCCESS \n")
-			time.sleep(0.5)
+			time.sleep(1)
 			print("start flashing APP FW \n")
 			push_index = 0
 			for chunks in list1:
@@ -117,7 +117,7 @@ if __name__ == '__main__':
 					
 			time.sleep(1)
 			serial.write(b'#FLASH_FINISH!')
-			time.sleep(0.1)
+			time.sleep(1)
 			response = read_port()
 			if(response.rstrip().decode('utf-8') == "Flash: Success! Rebooting !"):
 				print("\n firmware update complete succesfully")

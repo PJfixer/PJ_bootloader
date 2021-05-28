@@ -11,8 +11,8 @@
 #include <stdint.h>
 #include "main.h"
 
-#define ONE  14
-#define ZERO 7
+#define ONE  43
+#define ZERO 18
 
 #define LED_BYTES 3
 #define LED_BITS LED_BYTES*8
