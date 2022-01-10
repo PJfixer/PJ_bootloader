@@ -4,6 +4,7 @@ import argparse
 import sys, time
 import serial
 import struct
+from REM import *
 list1 = list() #the list that we will use to store the splited chunks from the original binaryy filee
 
 def read_port():
@@ -19,6 +20,12 @@ def push_chunks(chunk):
 	frame += b'!'
 	serial.write(frame)
 
+def Longboard_set_Firmware_update_mode():
+	result = REM_MASTER.Rem_set_object(0x02,0x01,0x07,100000)
+	if(result == 0):
+		print("error when setting Firmware update mode")
+	else:
+		print("succesfully set Firmware update mode !")
 
     
 if __name__ == '__main__':
@@ -29,6 +36,13 @@ if __name__ == '__main__':
 	parser.add_argument('--mcu_page_size',type=int, default=0x400, help="the mcu page size to calculate how many page erase before flash the binary")
 	parser.add_argument('--erase_only',type=int, default=-1, help="if this argument is invoked the script will only connect bottload and erase x pages of app firmware")
 	args = parser.parse_args()
+	
+	REM_MASTER = REM(0x00,args.port,9600)
+	REM_MASTER.set_max_retry(1)
+	Longboard_set_Firmware_update_mode()
+	time.sleep(1)
+	del REM_MASTER
+	
     
      #opening serial port 
 	serial = serial.Serial(args.port, 9600)
